@@ -1,3 +1,4 @@
+
 import streamlit as st
 from PIL import Image, ImageChops, ImageFilter
 import numpy as np
@@ -39,7 +40,8 @@ def analyze_noise(image: Image.Image):
 def pixel_anomaly_detection(image: Image.Image):
     gray = image.convert("L")
     img_np = np.array(gray, dtype=np.float32)
-    smoothed = np.array(Image.fromarray(img_np).filter(ImageFilter.BoxBlur(2)))
+    img_uint8 = np.clip(img_np, 0, 255).astype(np.uint8)
+    smoothed = np.array(Image.fromarray(img_uint8).filter(ImageFilter.BoxBlur(2)))
     diff = np.abs(img_np - smoothed)
     std_dev = np.std(diff)
     score = 20 if std_dev < 20 else 10
