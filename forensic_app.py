@@ -1,65 +1,63 @@
 
 import streamlit as st
-from PIL import Image, ImageChops
+from PIL import Image
 import numpy as np
+import cv2
+import piexif
 import os
 
 # =========================== Helper Functions ============================
 
 def extract_metadata(image: Image.Image):
     try:
-        exif_data = image._getexif()
-        if exif_data is not None:
-            exif = {str(k): str(v) for k, v in exif_data.items()}
-            suspicious = any(keyword in str(exif).lower() for keyword in ['photoshop', 'ai', 'dalle', 'diffusion'])
-            score = 20 if not suspicious else 10
-        else:
-            exif = {"Metadata": "None"}
-            score = 5
+        exif_data = piexif.load(image.info['exif'])
+        exif_dict = {tag: str(exif_data['0th'].get(tag, b'')).strip() for tag in [
+            piexif.ImageIFD.DateTime,
+            piexif.ImageIFD.Make,
+            piexif.ImageIFD.Model,
+            piexif.ImageIFD.Software
+        ]}
+        suspicious = any(keyword in str(exif_dict).lower() for keyword in ['photoshop', 'ai', 'dalle', 'diffusion'])
+        score = 20 if not suspicious else 10
     except Exception:
-        exif = {"Metadata": "Unavailable"}
+        exif_dict = {"Metadata": "None"}
         score = 5
-    return exif, score
+    return exif_dict, score
 
 def error_level_analysis(image: Image.Image):
-    image.save("temp.jpg", "JPEG", quality=90)
-    recompressed = Image.open("temp.jpg").convert("RGB")
-    ela_image = ImageChops.difference(image, recompressed)
-    ela_np = np.array(ela_image)
-    ela_score = 25 - int(np.std(ela_np) / 3)
+    image.save("temp.jpg", "JPEG", quality=95)
+    original = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
+    recompressed = cv2.imread("temp.jpg")
+    ela_image = cv2.absdiff(original, recompressed)
+    ela_score = 25 - int(np.std(ela_image) / 3)
     ela_score = max(0, min(25, ela_score))
     return ela_image, ela_score
 
 def analyze_noise(image: Image.Image):
-    gray = image.convert("L")
-    img_np = np.array(gray, dtype=np.float32)
-    sobel_x = np.abs(np.diff(img_np, axis=1))
-    sobel_y = np.abs(np.diff(img_np, axis=0))
-    gradient = np.mean(sobel_x) + np.mean(sobel_y)
-    score = 20 if 5 < gradient < 50 else 10
-    return score, gradient
+    gray = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2GRAY)
+    laplacian = cv2.Laplacian(gray, cv2.CV_64F)
+    variance = np.var(laplacian)
+    score = 20 if 100 < variance < 1000 else 10
+    return score, variance
 
 def pixel_anomaly_detection(image: Image.Image):
-    gray = image.convert("L")
-    img_np = np.array(gray, dtype=np.float32)
-    smoothed = np.array(Image.fromarray(img_np).filter(Image.Filter.BoxBlur(2)))
-    diff = np.abs(img_np - smoothed)
+    gray = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2GRAY)
+    kernel = np.ones((5, 5), np.float32) / 25
+    smoothed = cv2.filter2D(gray, -1, kernel)
+    diff = cv2.absdiff(gray, smoothed)
     std_dev = np.std(diff)
     score = 20 if std_dev < 20 else 10
     return score, std_dev
 
 def stylistic_symmetry_check(image: Image.Image):
-    gray = image.convert("L")
-    img_np = np.array(gray)
-    flipped = np.fliplr(img_np)
-    symmetry = np.mean(np.abs(img_np - flipped))
+    gray = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2GRAY)
+    symmetry = np.mean(np.abs(gray - np.fliplr(gray)))
     score = 15 if symmetry > 10 else 10
     return score, symmetry
 
 # =============================== Streamlit App ===============================
 
 st.title("🔍 מערכת פורנזית לזיהוי תמונות מזויפות (ללא מודל ML)")
-st.image("logo.png", width=200)
 
 uploaded_file = st.file_uploader("העלה תמונה לבדיקה", type=["jpg", "jpeg", "png"])
 
@@ -82,7 +80,7 @@ if uploaded_file:
 
     st.write(f"**ציון מטא־דאטה:** {score_meta}/20")
     st.write(f"**ציון ELA:** {score_ela}/25")
-    st.write(f"**ציון רעש דיגיטלי:** {score_noise}/20 (gradient: {noise_val:.2f})")
+    st.write(f"**ציון רעש דיגיטלי:** {score_noise}/20 (שונות: {noise_val:.2f})")
     st.write(f"**ציון חריגות פיקסלים:** {score_pixel}/20 (סטיית תקן: {pixel_dev:.2f})")
     st.write(f"**ציון סימטריה חזותית:** {score_style}/15 (סטיית סימטריה: {sym_val:.2f})")
 
