@@ -1,7 +1,3 @@
-
-# Forensic Web App for Authenticity Detection of Historical Black-and-White Photos
-# Streamlit-based with metadata, graphical forensics, and GPT-4 Vision
-
 import streamlit as st
 import os
 import numpy as np
@@ -15,11 +11,10 @@ from fpdf import FPDF
 from datetime import datetime
 
 st.set_page_config(page_title="Forensic Analysis of Historical Photos", layout="centered")
-st.title("🧠 GPT-4 Vision Based Analysis")
+st.title("🧠 GPT-4 Vision Forensic Analyzer")
 
 if 'history' not in st.session_state:
     st.session_state.history = []
-
 
 def extract_metadata(image):
     exif_dict = {}
@@ -31,14 +26,13 @@ def extract_metadata(image):
                     tag = ExifTags.TAGS.get(tag_id, tag_id)
                     exif_dict[tag] = value
     except Exception as e:
-        st.warning(f"⚠️ Could not extract Metadata: {str(e)}")
+        st.warning(f"⚠️ Failed to extract metadata: {str(e)}")
     return {
         "Make": exif_dict.get("Make", "N/A"),
         "Model": exif_dict.get("Model", "N/A"),
         "Software": exif_dict.get("Software", "N/A"),
         "DateTime": exif_dict.get("DateTime", "N/A"),
     }
-
 
 def error_level_analysis(image):
     buf = io.BytesIO()
@@ -48,14 +42,12 @@ def error_level_analysis(image):
     ela_image = Image.fromarray(np.abs(np.array(image, dtype=np.int16) - np.array(resaved, dtype=np.int16)).astype(np.uint8))
     return ela_image
 
-
 def compute_noise_map(image):
     gray = image.convert('L')
     image_np = np.array(gray, dtype=np.float32)
     blurred = cv2.GaussianBlur(image_np, (5, 5), 0)
     noise_map = np.abs(image_np - blurred)
     return noise_map
-
 
 def detect_pixel_anomalies(image, window_size=7):
     gray = image.convert('L')
@@ -66,14 +58,12 @@ def detect_pixel_anomalies(image, window_size=7):
     local_std = np.sqrt(local_var)
     return local_std
 
-
 def show_image(title, array, cmap=None):
     fig, ax = plt.subplots()
     ax.imshow(array, cmap=cmap)
     ax.set_title(title)
     ax.axis('off')
     st.pyplot(fig)
-
 
 def calculate_score(metadata, ela_img, noise_map, anomaly_map):
     score = 100
@@ -89,7 +79,6 @@ def calculate_score(metadata, ela_img, noise_map, anomaly_map):
         score -= 20
     return max(0, score)
 
-
 def analyze_with_openai_vision(image_pil):
     api_key = st.secrets["OPENAI_API_KEY"]
     openai.api_key = api_key
@@ -102,7 +91,7 @@ def analyze_with_openai_vision(image_pil):
         messages=[
             {
                 "role": "system",
-                "content": "You are a forensic expert. Analyze the uploaded photo and describe if it seems manipulated, AI-generated, or authentic."
+                "content": "You are a forensic expert. Analyze the image for signs of forgery, AI usage or advanced editing."
             },
             {
                 "role": "user",
@@ -120,22 +109,84 @@ def analyze_with_openai_vision(image_pil):
     )
     return response['choices'][0]['message']['content']
 
-
 def generate_pdf_report(filename, metadata, score, gpt_analysis=None):
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font("Arial", size=12)
-    pdf.cell(200, 10, txt="Forensic Analysis Report", ln=True, align='C')
+    pdf.cell(200, 10, txt="Forensic Image Report", ln=True, align='C')
     pdf.ln(10)
-    pdf.cell(200, 10, txt=f"Filename: {filename}", ln=True)
+    pdf.cell(200, 10, txt=f"File Name: {filename}", ln=True)
     for k, v in metadata.items():
         pdf.cell(200, 10, txt=f"{k}: {v}", ln=True)
     pdf.ln(5)
     pdf.cell(200, 10, txt=f"Authenticity Score: {score}/100", ln=True)
-    result = "🟢 Highly Authentic" if score > 85 else "🟡 Some Suspicion" if score > 65 else "🔴 Possible Forgery"
+    result = "🟢 Highly Authentic" if score > 85 else "🟡 Possibly Edited" if score > 65 else "🔴 Likely Fake"
     pdf.cell(200, 10, txt=f"Classification: {result}", ln=True)
     if gpt_analysis:
         pdf.ln(10)
-        pdf.multi_cell(0, 10, txt=f"GPT Content Analysis:
-{gpt_analysis}")
+        pdf.multi_cell(0, 10, txt="GPT Content Analysis:")
+        pdf.ln(2)
+        pdf.multi_cell(0, 10, txt=gpt_analysis)
     return pdf.output(dest='S').encode('latin1')
+
+uploaded_file = st.file_uploader("Upload an image for analysis", type=['jpg', 'jpeg', 'png'])
+
+if uploaded_file:
+    image = Image.open(uploaded_file).convert('RGB')
+    filename = uploaded_file.name
+    st.image(image, caption="Uploaded Image", use_column_width=True)
+
+    st.subheader("📋 Metadata")
+    metadata = extract_metadata(image)
+    for k, v in metadata.items():
+        st.write(f"**{k}:** {v}")
+    if all(v == "N/A" for v in metadata.values()):
+        st.info("No Metadata found – proceeding with visual analysis only.")
+
+    st.subheader("🧪 Forensic Visual Analysis")
+    ela_image = error_level_analysis(image)
+    noise_map = compute_noise_map(image)
+    anomaly_map = detect_pixel_anomalies(image)
+
+    show_image("ELA - Error Level Analysis", ela_image)
+    show_image("Noise Map", noise_map, cmap='gray')
+    show_image("Pixel Anomalies", anomaly_map, cmap='hot')
+
+    score = calculate_score(metadata, np.array(ela_image), noise_map, anomaly_map)
+    st.subheader("📊 Authenticity Score")
+    st.metric(label="Score", value=f"{score}/100")
+
+    if score > 85:
+        st.success("✅ Image is likely authentic")
+    elif score > 65:
+        st.warning("⚠️ Possible manipulation detected")
+    else:
+        st.error("❌ High likelihood of forgery or AI generation")
+
+    gpt_analysis = None
+    st.subheader("🤖 GPT-4 Vision Content Review")
+    if "OPENAI_API_KEY" in st.secrets:
+        with st.spinner("Analyzing with GPT-4 Vision..."):
+            gpt_analysis = analyze_with_openai_vision(image)
+            st.markdown(f"**GPT-4 Result:**
+
+{gpt_analysis}")
+
+    st.session_state.history.append({
+        "file": filename,
+        "score": score,
+        "result": "Authentic" if score > 85 else "Suspect" if score > 65 else "Fake",
+        "datetime": datetime.now().strftime("%Y-%m-%d %H:%M")
+    })
+
+    st.download_button(
+        label="Download PDF Report",
+        data=generate_pdf_report(filename, metadata, score, gpt_analysis),
+        file_name=f"forensic_report_{filename.replace(' ', '_')}.pdf",
+        mime="application/pdf"
+    )
+
+if st.session_state.history:
+    st.subheader("🗂️ Recent Analyses")
+    for item in reversed(st.session_state.history[-5:]):
+        st.write(f"📁 **{item['file']}** | Score: {item['score']} | Result: {item['result']} | 🕓 {item['datetime']}")

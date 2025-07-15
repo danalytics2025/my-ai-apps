@@ -1,55 +1,85 @@
-# 🧠 Forensic AI Image Analyzer (Black-and-White Historical Photo Validator)
+# 🧠 Forensic Analysis Web App (Black & White Historical Photos)
 
-A Streamlit-based forensic web app to detect manipulations, deepfakes, or AI-generated black-and-white historical images.
+This Streamlit-based web application is designed to perform forensic analysis of black-and-white historical images. It assesses image authenticity using a combination of EXIF metadata extraction, image forensics (ELA, noise maps, anomaly detection), and GPT-4 Vision for AI-based content interpretation.
 
-## 🔍 Features
+---
 
-- Extracts and analyzes image metadata (EXIF)
-- Performs Error Level Analysis (ELA)
-- Generates noise and pixel anomaly maps
-- Calculates an authenticity score
-- Optional GPT-4 Vision-based analysis
-- Generates downloadable PDF reports in English
-- Session history tracking
+## 🔧 Features
 
-## 🚀 Installation
+- 📤 Upload historical B&W images in JPG or PNG format.
+- 🧾 Extract EXIF metadata (Make, Model, Software, DateTime).
+- 🧪 Run image forensic tools:
+  - Error Level Analysis (ELA)
+  - Noise Map Computation
+  - Pixel Anomaly Detection
+- 📊 Calculate an authenticity score (0–100).
+- 🧠 GPT-4 Vision integration for deep AI content analysis.
+- 📄 Download a full forensic report in PDF format (English only).
+- 🗂️ Track recent analysis history within the session.
+
+---
+
+## 🛠 Setup & Installation
+
+### 1. Clone the repository
 
 ```bash
-git clone https://github.com/your-username/forensic-ai-analyzer.git
-cd forensic-ai-analyzer
+git clone https://github.com/your-user/forensic-app.git
+cd forensic-app
+```
+
+### 2. Install dependencies
+
+```bash
 pip install -r requirements.txt
 ```
 
-## 🧪 Running the App
+### 3. Add OpenAI API Key
+
+Create a `.streamlit/secrets.toml` file:
+
+```toml
+[general]
+OPENAI_API_KEY = "your_openai_api_key_here"
+```
+
+> **Important:** Never expose your secret key in public repositories.
+
+### 4. Run the app
 
 ```bash
 streamlit run forensic_app.py
 ```
 
-## 🔐 API Key Setup
+---
 
-Create a `.streamlit/secrets.toml` file:
+## 📤 Deployment (Streamlit Cloud)
 
-```toml
-OPENAI_API_KEY = "your-openai-api-key-here"
-```
-
-This key is used for GPT-4 Vision analysis.
-
-## 🖼️ Uploading Files
-
-The app supports `.jpg`, `.jpeg`, and `.png` files.
-
-## 📄 Output
-
-Each uploaded image is analyzed and a forensic PDF report is generated.
-
-## ☁️ Deploying to Streamlit Cloud
-
-1. Push this repository to GitHub.
-2. Go to [streamlit.io/cloud](https://streamlit.io/cloud) and connect your GitHub repo.
-3. Set `OPENAI_API_KEY` in Streamlit Cloud's secret settings.
+To deploy on [Streamlit Cloud](https://streamlit.io/cloud):
+- Upload your project files.
+- Add your OpenAI API key via the "Secrets" tab (`OPENAI_API_KEY`).
+- Click "Deploy".
 
 ---
 
-© 2025 Forensic AI Analyzer. Built with ❤️ and GPT-4.
+## 📁 Project Structure
+
+```
+forensic_app/
+├── forensic_app.py
+├── requirements.txt
+└── .streamlit/
+    └── secrets.toml
+```
+
+---
+
+## 🧠 AI Disclaimer
+
+The application uses OpenAI’s GPT-4 Vision model to assist in identifying AI-generated or manipulated content. This is not a certified forensic tool and should be used for educational or investigative support only.
+
+---
+
+## 📄 License
+
+MIT License
