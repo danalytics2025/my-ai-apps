@@ -1,7 +1,7 @@
 streamlit
-fpdf
+openai
 Pillow
 numpy
-opencv-python
 matplotlib
-openai
+fpdf
+opencv-python-headless
