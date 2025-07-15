@@ -1,7 +1,7 @@
 streamlit
-openai
-numpy
-Pillow
-matplotlib
-opencv-python
 fpdf
+Pillow
+numpy
+opencv-python
+matplotlib
+openai
