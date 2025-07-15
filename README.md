@@ -1,28 +1,33 @@
+# 🕵️ אפליקציה פורנזית לזיהוי תמונות היסטוריות בשחור-לבן
 
-# 🕵️ Forensic Image Authenticity Checker (No ML)
+אפליקציה מבוססת Streamlit לבדיקת אותנטיות של תמונות, כולל:
+- ניתוח ELA, מפת רעש, חריגות פיקסלים
+- חילוץ Metadata (אם קיים)
+- שילוב GPT-4 Vision API (עם הגדרת API Key דרך Streamlit secrets)
 
-This Streamlit app performs forensic analysis of uploaded images to help detect possible tampering or AI generation — using only lightweight visual algorithms (no machine learning).
+## 🚀 התקנה והרצה מקומית
 
-## 🔍 Features
+1. התקן את התלויות:
+```bash
+pip install -r requirements.txt
+```
 
-- **ELA (Error Level Analysis)**: Detects inconsistencies in compression levels.
-- **Digital Noise Analysis**: Detects unnatural texture consistency.
-- **Pixel Anomaly Detection**: Flags odd smoothing or blurring patterns.
-- **Symmetry Check**: Flags excessive visual symmetry (common in AI).
-- **Metadata Inspection**: Extracts EXIF and detects editing software.
+2. הפעל את האפליקציה:
+```bash
+streamlit run forensic_app.py
+```
 
-## 🧠 No ML Required
+3. במצב פרטי (ללא שאלת מפתח בכל פעם) - צור קובץ `secrets.toml` בתיקייה `.streamlit/`:
 
-This app is ideal for environments like [streamlit.app](https://streamlit.app) with strict size or dependency limits. No external models or cloud inference needed.
+```toml
+OPENAI_API_KEY = "sk-...המפתח שלך כאן..."
+```
 
-## 🚀 How to Deploy
+## 🌐 פריסה ב־Streamlit Cloud
 
-1. Upload to a GitHub repo.
-2. Go to [streamlit.io/cloud](https://streamlit.io/cloud) and connect your repo.
-3. Set the main file to `forensic_app.py`.
-4. Click **Deploy** and start analyzing images.
+1. העלה את כל הקבצים ל־GitHub.
+2. ב־Streamlit Cloud, חבר את הריפוזיטורי והגדר את `OPENAI_API_KEY` תחת Settings > Secrets.
 
-## Example Use Cases
-- Journalistic photo verification
-- Forensic image analysis
-- Educational demos on image manipulation
+---
+
+© 2025 יוסי אביטל

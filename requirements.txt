@@ -1,6 +1,7 @@
 streamlit
-torch
-torchvision
-pillow
+openai
+numpy
+Pillow
+matplotlib
 opencv-python
-huggingface_hub
+fpdf
